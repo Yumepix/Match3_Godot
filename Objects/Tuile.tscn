@@ -1,0 +1,62 @@
+[gd_scene load_steps=10 format=2]
+
+[ext_resource path="res://Assets/planete_2.png" type="Texture" id=1]
+[ext_resource path="res://Assets/planete_1.png" type="Texture" id=2]
+[ext_resource path="res://Assets/planete_3.png" type="Texture" id=3]
+[ext_resource path="res://Assets/planete_5.png" type="Texture" id=4]
+[ext_resource path="res://Assets/planete_6.png" type="Texture" id=5]
+[ext_resource path="res://Assets/planete_4.png" type="Texture" id=6]
+[ext_resource path="res://Objects/Tuile.gd" type="Script" id=7]
+
+[sub_resource type="SpriteFrames" id=1]
+animations = [ {
+"frames": [  ],
+"loop": true,
+"name": "transparent",
+"speed": 5.0
+}, {
+"frames": [ ExtResource( 2 ), ExtResource( 1 ), ExtResource( 3 ), ExtResource( 4 ), ExtResource( 6 ), ExtResource( 5 ) ],
+"loop": true,
+"name": "planete",
+"speed": 5.0
+} ]
+
+[sub_resource type="CircleShape2D" id=2]
+radius = 23.8755
+
+[node name="Tuile" type="Area2D"]
+script = ExtResource( 7 )
+
+[node name="SpriteTuile" type="AnimatedSprite" parent="."]
+frames = SubResource( 1 )
+animation = "transparent"
+
+[node name="CollisionTuile" type="CollisionShape2D" parent="."]
+shape = SubResource( 2 )
+
+[node name="Tween" type="Tween" parent="."]
+
+[node name="ColorRect" type="ColorRect" parent="."]
+visible = false
+margin_left = -19.0
+margin_top = -24.0
+margin_right = 18.0
+margin_bottom = -8.0
+color = Color( 0, 0, 0, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Infos" type="Label" parent="."]
+visible = false
+margin_left = -16.8409
+margin_top = -22.5705
+margin_right = 16.1591
+margin_bottom = -8.57046
+text = "texte"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[connection signal="mouse_entered" from="." to="." method="_on_Tuile_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_Tuile_mouse_exited"]
