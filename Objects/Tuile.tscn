@@ -37,7 +37,6 @@ shape = SubResource( 2 )
 [node name="Tween" type="Tween" parent="."]
 
 [node name="ColorRect" type="ColorRect" parent="."]
-visible = false
 margin_left = -19.0
 margin_top = -24.0
 margin_right = 18.0
@@ -48,7 +47,6 @@ __meta__ = {
 }
 
 [node name="Infos" type="Label" parent="."]
-visible = false
 margin_left = -16.8409
 margin_top = -22.5705
 margin_right = 16.1591

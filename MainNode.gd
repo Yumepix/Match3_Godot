@@ -1,6 +1,5 @@
 extends Node2D
 
-
 const CELL_SIZE = 64
 
 var is_in_grid = false
@@ -15,10 +14,10 @@ var stase_grid = []
 var pos_taken_tuile := Vector2(0,0)
 var origin_pixel := Vector2(0,0)
 var taken_tuile = null
-var h = null
+var highlight = null
 var matching_release = false
 var empty_cell = null
-var empty_tuile = null
+var tuile_de_susbtitution = null
 var is_taken = false
 
 onready var CR = $ColorRect
@@ -40,42 +39,37 @@ func _ready():
 	global_grid = initialize_tab()
 	
 
-
 func _physics_process(delta):
-	var pos_mouse = get_global_mouse_position()
 	
-	# vérifie que l'on est bien dans la grille
-	if pos_mouse.x > CR.get_rect().position.x \
-	and pos_mouse.x < CR.get_rect().position.x+CR.get_rect().size.x \
-	and pos_mouse.y > CR.get_rect().position.y \
-	and pos_mouse.y < CR.get_rect().position.y+ CR.get_rect().size.y:
-		is_in_grid = true
-	else:
-		is_in_grid = false
-		
+	var pos_mouse = get_global_mouse_position()
+	is_in_grid = is_cursor_in_grid(pos_mouse)
 	
 	if is_in_grid:
 		if (Input.is_action_just_pressed("ui_left")):
 			# position de la case où l'on a récupéré la tuile
 			pos_taken_tuile = get_grid_position(pos_mouse)
+	
 			# la tuile récupérée
+			# taken_tuile est donc un node Area2d
 			taken_tuile = global_grid[pos_taken_tuile.x][pos_taken_tuile.y]
-
-			# on supprime la tuile du tableau
-			empty_tuile = Tuile.instance()
-			empty_tuile.set_transparent()
-			global_grid[pos_taken_tuile.x][pos_taken_tuile.y] = empty_tuile
+		
+			# on crée une tuile que l'on va insérer dans l'emplacement vide
+			tuile_de_susbtitution = Tuile.instance()
+			#empty_tuile.set_transparent()
+			global_grid[pos_taken_tuile.x][pos_taken_tuile.y] = tuile_de_susbtitution
 			
 			### highlight
-			h = HL.instance()
-			add_child(h)
+			highlight = HL.instance()
+			add_child(highlight)
 			origin_pixel = get_pixel_position(pos_taken_tuile.x,pos_taken_tuile.y)
 		
-			h.horizontal_pos = Vector2(CR.rect_position.x,origin_pixel.y-(CELL_SIZE/2))
-			h.horizontal_size = Vector2(CR.rect_size.x,CELL_SIZE)
+			highlight.horizontal_pos = Vector2(CR.rect_position.x, origin_pixel.y-(CELL_SIZE/2))
+			highlight.horizontal_size = Vector2(CR.rect_size.x,CELL_SIZE)
 			
-			h.vertical_pos = Vector2(origin_pixel.x-(CELL_SIZE/2),CR.rect_position.y)
-			h.vertical_size = Vector2(CELL_SIZE,CR.rect_size.y)
+			highlight.vertical_pos = Vector2(origin_pixel.x-(CELL_SIZE/2), CR.rect_position.y)
+			highlight.vertical_size = Vector2(CELL_SIZE,CR.rect_size.y)
+			
+			
 			empty_cell = pos_taken_tuile
 			# la copie du tableau va nous servir au rollback
 			stase_grid = global_grid.duplicate(true)
@@ -90,8 +84,8 @@ func _physics_process(delta):
 			check_cells(pos_taken_tuile,get_grid_position(pos_mouse))
 			
 			
-			
-		if (Input.is_action_just_released("ui_left")):
+	if is_taken:
+		if (Input.is_action_just_released("ui_left") || !is_in_grid):
 			taken_tuile.z_index = taken_tuile.initial_z_index
 			
 		#	matching_release = true
@@ -105,15 +99,28 @@ func _physics_process(delta):
 				global_grid[empty_cell.x][empty_cell.y] = taken_tuile
 				
 			stase_grid = []
-			h.queue_free()
+			highlight.queue_free()
 			is_taken = false
-		
+
+
+
+func is_cursor_in_grid(pos_mouse):
+	if pos_mouse.x > CR.get_rect().position.x \
+	and pos_mouse.x < CR.get_rect().position.x+CR.get_rect().size.x \
+	and pos_mouse.y > CR.get_rect().position.y \
+	and pos_mouse.y < CR.get_rect().position.y+ CR.get_rect().size.y:
+		return true
+	else:
+		return false
+
 
 
 func check_cells(origin:Vector2, current:Vector2):
 	
-	var nb_cells_to_move_y = empty_cell.y-current.y
-	var nb_cells_to_move_x = empty_cell.x-current.x
+	# origin : coordonnées de la case prise
+	# current : coordonnées de la case actuelle
+	var nb_cells_to_move_y = origin.y-current.y
+	var nb_cells_to_move_x = origin.x-current.x
 	
 	if origin.x == current.x and origin.y == current.y:
 		rollback_grid()
@@ -133,47 +140,48 @@ func check_cells(origin:Vector2, current:Vector2):
 	if origin.x == current.x:
 		if nb_cells_to_move_y > 0:
 			for y in range(empty_cell.y,current.y,-1):
-				print("vers le bas") 
-				print("empty : "+str(empty_cell.y))
-				print("y,current.y : "+str(y,current.y))
+				#print("vers le bas") 
 				global_grid[origin.x][y-1].move_tuile(get_pixel_position(origin.x,y))
 				global_grid[origin.x][y] = global_grid[origin.x][y-1]
-			global_grid[origin.x][current.y] = empty_tuile
+			global_grid[current.x][current.y] = tuile_de_susbtitution
 			empty_cell = current
 		
 		elif nb_cells_to_move_y < 0:
-			print("vers le haut")
+			#print("vers le haut")
 			for y in range(empty_cell.y,current.y):
 				global_grid[origin.x][y+1].move_tuile(get_pixel_position(origin.x,y))
 				global_grid[origin.x][y] = global_grid[origin.x][y+1]
-			global_grid[origin.x][current.y] = empty_tuile
+			global_grid[current.x][current.y] = tuile_de_susbtitution
 			empty_cell = current
-			
+
 
 	# sur la ligne horizontale	
 	if origin.y == current.y:
 		if nb_cells_to_move_x > 0:
-			print("vers la droite") 
+			#print("vers la droite") 
 			for x in range(empty_cell.x,current.x,-1):
 				global_grid[x-1][origin.y].move_tuile(get_pixel_position(x,origin.y))
 				global_grid[x][origin.y] = global_grid[x-1][origin.y]
-			global_grid[current.x][origin.y] = empty_tuile
+			global_grid[current.x][current.y] = tuile_de_susbtitution
 			empty_cell = current
 		elif nb_cells_to_move_x < 0:
-			print("vers la gauche")
+			#print("vers la gauche")
 			for x in range(empty_cell.x,current.x):
 				global_grid[x+1][origin.y].move_tuile(get_pixel_position(x,origin.y))
 				global_grid[x][origin.y] = global_grid[x+1][origin.y]
-			global_grid[current.x][origin.y] = empty_tuile
+			global_grid[current.x][current.y] = tuile_de_susbtitution
 			empty_cell = current
-			
+
+	if origin.x != current.x and origin.y != current.y:
+		empty_cell = origin
+
 			
 func rollback_grid():
 	for x in grid_nb_cols:
 		for y in grid_nb_rows:
 			if stase_grid[x][y] != global_grid[x][y]:
 				global_grid[x][y] = stase_grid[x][y]
-				if global_grid[x][y] != empty_tuile:
+				if global_grid[x][y] != tuile_de_susbtitution:
 					global_grid[x][y].move_tuile(get_pixel_position(x,y))
 
 
